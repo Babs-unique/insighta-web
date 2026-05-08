@@ -24,7 +24,7 @@ const baseQueryWithReauth: BaseQueryFn<
     let result = await baseQuery(args, api, extraOptions);
     if (result.error && result.error.status === 401) {
         const refreshResult = await baseQuery({
-            url : '/api/users/refresh',
+            url : '/api/auth/refresh',
             method: 'POST',
         }, 
             api, extraOptions);
@@ -40,6 +40,6 @@ const baseQueryWithReauth: BaseQueryFn<
 export const api = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithReauth,
-    tagTypes: ['Profile', 'Search', 'Export'],
+    tagTypes: ['Profile', 'Auth'],
     endpoints: () => ({})
 })
