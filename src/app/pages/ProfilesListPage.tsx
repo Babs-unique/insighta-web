@@ -6,6 +6,7 @@ import { Select } from '../components/Select';
 import { Button } from '../components/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+
 interface Profile {
   id: string;
   name: string;
@@ -37,8 +38,8 @@ export function ProfilesListPage() {
     { id: '8', name: 'Carlos Rodriguez', gender: 'Male', age: 38, ageGroup: '35-44', country: 'Mexico' },
   ];
 
-  const totalPages = 5;
 
+  const totalPages = 5;
   return (
     <div className="p-8">
       <div className="mb-8">
