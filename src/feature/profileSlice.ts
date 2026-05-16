@@ -2,6 +2,9 @@ import { api } from '../api/api.ts';
 
 interface CreateProfileArgs {
     name: string;
+    gender?: string;
+    age?: number;
+    country?: string;
 }
 
 interface SearchProfilesArgs {
@@ -11,12 +14,28 @@ interface SearchProfilesArgs {
 }
 interface ExportProfilesArgs {
     sort_by: string;
-    order : 'asc' | 'desc';
-    format: 'csv';
+    order: 'asc' | 'desc';
+    format: 'csv' | 'json' | 'xlsx' | 'txt';
 }
-interface Profile{
-    sort_by: string;
-    order : 'asc' | 'desc';
+
+interface GetProfilesArgs {
+    page?: number;
+    limit?: number;
+    gender?: string;
+    ageGroup?: string;
+    country?: string;
+    minAge?: string;
+    maxAge?: string;
+    sort_by?: string;
+    order?: 'asc' | 'desc';
+}
+
+interface UpdateProfileArgs {
+    id: string;
+    name?: string;
+    gender?: string;
+    age?: number;
+    country?: string;
 }
 
 const profileSlice = api.injectEndpoints({
@@ -26,8 +45,8 @@ const profileSlice = api.injectEndpoints({
                 url: `/api/profiles`,
                 method: 'POST',
                 body: args,
-                providesTags: ['Profile'],
-            })
+            }),
+            invalidatesTags: ['Profile'],
         }),
         searchProfiles: build.query({
             query: (args: SearchProfilesArgs) => ({
@@ -51,20 +70,42 @@ const profileSlice = api.injectEndpoints({
             })
         }),
         getProfiles: build.query({
-            query: (args: Profile) => ({
-                url: `/api/profiles?sort_by=${args.sort_by}&order=${args.order}`,
-                method: 'GET',
-                providesTags: ['Profile'],
-            })
+            query: (args?: GetProfilesArgs) => {
+                const params = new URLSearchParams();
+                if (args?.page) params.append('page', args.page.toString());
+                if (args?.limit) params.append('limit', args.limit.toString());
+                if (args?.gender && args.gender !== 'all') params.append('gender', args.gender);
+                if (args?.ageGroup && args.ageGroup !== 'all') params.append('ageGroup', args.ageGroup);
+                if (args?.country) params.append('country', args.country);
+                if (args?.minAge) params.append('minAge', args.minAge);
+                if (args?.maxAge) params.append('maxAge', args.maxAge);
+                if (args?.sort_by) params.append('sort_by', args.sort_by);
+                if (args?.order) params.append('order', args.order);
+                
+                const queryString = params.toString();
+                return {
+                    url: `/api/profiles${queryString ? '?' + queryString : ''}`,
+                    method: 'GET',
+                };
+            },
+            providesTags: ['Profile'],
         }),
         deleteProfile: build.mutation({
             query: (id: string) => ({
                 url: `/api/profiles/${id}`,
                 method: 'DELETE',
-                providesTags: ['Profile'],
+                invalidatesTags: ['Profile'],
+            })
+        }),
+        updateProfile: build.mutation({
+            query: (args: UpdateProfileArgs) => ({
+                url: `/api/profiles/${args.id}`,
+                method: 'PUT',
+                body: args,
+                invalidatesTags: ['Profile'],
             })
         })
     })
-})
+});
 
-export const { useCreateProfileMutation, useSearchProfilesQuery, useExportProfilesQuery, useGetProfileByIdQuery, useGetProfilesQuery, useDeleteProfileMutation } = profileSlice;
+export const { useCreateProfileMutation, useSearchProfilesQuery, useExportProfilesQuery, useGetProfileByIdQuery, useGetProfilesQuery, useDeleteProfileMutation, useUpdateProfileMutation } = profileSlice;

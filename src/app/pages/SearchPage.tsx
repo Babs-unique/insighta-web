@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { Search, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Sparkles, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
+import { useSearchProfilesQuery } from '@/feature/profileSlice';
 
 interface SearchResult {
   id: string;
@@ -13,10 +14,12 @@ interface SearchResult {
   relevance: number;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function SearchPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   const suggestions = [
@@ -26,20 +29,21 @@ export function SearchPage() {
     'males over 40 from europe',
   ];
 
-  const mockResults: SearchResult[] = [
-    { id: '1', name: 'Ahmed Hassan', gender: 'Male', age: 29, country: 'Nigeria', relevance: 98 },
-    { id: '2', name: 'Oluwaseun Adebayo', gender: 'Male', age: 24, country: 'Nigeria', relevance: 95 },
-    { id: '3', name: 'Chukwudi Okonkwo', gender: 'Male', age: 27, country: 'Nigeria', relevance: 92 },
-    { id: '4', name: 'Ikenna Nwosu', gender: 'Male', age: 31, country: 'Nigeria', relevance: 88 },
-  ];
+  // Fetch search results
+  const { data: searchResults, isLoading } = useSearchProfilesQuery(
+    { q: searchQuery, page: currentPage, limit: ITEMS_PER_PAGE },
+    { skip: !searchQuery }
+  );
 
-  const handleSearch = (searchQuery: string) => {
-    setQuery(searchQuery);
-    setHasSearched(true);
+  const results = searchResults?.data || [];
+  const totalPages = searchResults?.totalPages || 0;
+  const hasSearched = !!searchQuery;
+
+  const handleSearch = (q: string) => {
+    setSearchQuery(q);
+    setQuery(q);
     setCurrentPage(1);
   };
-
-  const totalPages = 3;
 
   return (
     <div className="p-8">
@@ -66,9 +70,14 @@ export function SearchPage() {
               size="lg"
               onClick={() => handleSearch(query)}
               className="gap-2 flex items-center"
+              disabled={isLoading}
             >
-              <Sparkles className="w-5 h-5" />
-              Search
+              {isLoading ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (
+                <Sparkles className="w-5 h-5" />
+              )}
+              {isLoading ? 'Searching...' : 'Search'}
             </Button>
           </div>
 
@@ -90,95 +99,106 @@ export function SearchPage() {
           )}
         </Card>
 
-        {hasSearched && (
+        {hasSearched && isLoading && (
+          <div className="text-center py-12">
+            <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-400" />
+            <p className="text-gray-400">Searching profiles...</p>
+          </div>
+        )}
+
+        {hasSearched && !isLoading && (
           <>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-gray-400">
-                Found <span className="text-white">{mockResults.length}</span> results for{' '}
-                <span className="text-purple-400">"{query}"</span>
+                Found <span className="text-white">{searchResults?.total || 0}</span> results for{' '}
+                <span className="text-purple-400">"{searchQuery}"</span>
               </p>
             </div>
 
-            <div className="space-y-4 mb-6">
-              {mockResults.map((result) => (
-                <Card
-                  key={result.id}
-                  className="hover:border-purple-500/50 cursor-pointer transition-all"
-                  onClick={() => navigate(`/app/profiles/${result.id}`)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                        {result.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="text-lg mb-1">{result.name}</p>
-                        <div className="flex items-center gap-3 text-sm text-gray-400">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs ${
-                              result.gender === 'Male'
-                                ? 'bg-blue-500/10 text-blue-400'
-                                : 'bg-purple-500/10 text-purple-400'
-                            }`}
-                          >
-                            {result.gender}
-                          </span>
-                          <span>{result.age} years old</span>
-                          <span>{result.country}</span>
+            {results.length > 0 ? (
+              <>
+                <div className="space-y-4 mb-6">
+                  {results.map((result: SearchResult) => (
+                    <div
+                      key={result.id}
+                      onClick={() => navigate(`/app/profiles/${result.id}`)}
+                      className="cursor-pointer"
+                    >
+                      <Card className="hover:border-purple-500/50 transition-all h-full">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                              {result.name.split(' ').map((n: string) => n[0]).join('')}
+                            </div>
+                            <div>
+                              <p className="text-lg mb-1">{result.name}</p>
+                              <div className="flex items-center gap-3 text-sm text-gray-400">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-xs ${
+                                    result.gender?.toLowerCase() === 'male'
+                                      ? 'bg-blue-500/10 text-blue-400'
+                                      : 'bg-purple-500/10 text-purple-400'
+                                  }`}
+                                >
+                                  {result.gender}
+                                </span>
+                                <span>{result.age} years old</span>
+                                <span>{result.country}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-400 mb-1">Relevance</p>
+                            <div className="flex items-center gap-2">
+                              <div className="w-20 bg-gray-800 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-full rounded-full"
+                                  style={{ width: `${result.relevance}%` }}
+                                />
+                              </div>
+                              <p className="text-sm">{result.relevance}%</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </Card>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-400 mb-1">Relevance</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-800 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 h-full rounded-full"
-                            style={{ width: `${result.relevance}%` }}
-                          />
-                        </div>
-                        <p className="text-sm">{result.relevance}%</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  ))}
+                </div>
 
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm px-3">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === 1 || isLoading}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm px-3">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={currentPage === totalPages || isLoading}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Card className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-gray-600" />
+                </div>
+                <h3 className="text-xl mb-2">No results found</h3>
+                <p className="text-gray-400">
+                  Try adjusting your search query or using different keywords
+                </p>
+              </Card>
+            )}
           </>
-        )}
-
-        {hasSearched && mockResults.length === 0 && (
-          <Card className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-600" />
-            </div>
-            <h3 className="text-xl mb-2">No results found</h3>
-            <p className="text-gray-400">
-              Try adjusting your search query or using different keywords
-            </p>
-          </Card>
         )}
       </div>
     </div>

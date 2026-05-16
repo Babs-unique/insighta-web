@@ -9,12 +9,8 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  // Fetch OAuth URL from backend (generates PKCE values)
   const { data: authData, isLoading: isLoadingUrl, error: urlError } = useGetAuthUrlQuery();
 
-  console.log(authData)
-
-  // Show error if user cancelled GitHub auth or had network issues
   const errorParam = searchParams.get('error');
   const [showError, setShowError] = useState(!!errorParam);
 
@@ -27,8 +23,6 @@ export function LoginPage() {
 
   const handleLogin = () => {
     if (authData?.authorizationUrl) {
-      // Use window.location.href for full page redirect to GitHub
-      // This is NOT an RTK Query call - it's a browser navigation
       window.location.href = authData.authorizationUrl;
     }
   };

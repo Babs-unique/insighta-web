@@ -2,14 +2,38 @@ import { useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Select } from '../components/Select';
-import { Download, FileJson, FileSpreadsheet, FileText } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, FileText, Loader } from 'lucide-react';
+import { useExportProfilesQuery } from '@/feature/profileSlice';
 
 export function ExportPage() {
   const [format, setFormat] = useState('csv');
   const [filter, setFilter] = useState('all');
+  const [shouldFetch, setShouldFetch] = useState(false);
+
+  // Trigger export query only when user clicks export
+  const { data: exportData, isLoading, error } = useExportProfilesQuery(
+    { sort_by: 'name', order: 'asc', format },
+    { skip: !shouldFetch }
+  );
 
   const handleExport = () => {
-    console.log(`Exporting as ${format} with filter ${filter}`);
+    setShouldFetch(true);
+
+    // Simulate file download
+    setTimeout(() => {
+      if (exportData) {
+        const element = document.createElement('a');
+        const file = new Blob([JSON.stringify(exportData)], {
+          type: 'application/octet-stream',
+        });
+        element.href = URL.createObjectURL(file);
+        element.download = `export_${Date.now()}.${format}`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+        setShouldFetch(false);
+      }
+    }, 500);
   };
 
   return (
@@ -98,13 +122,26 @@ export function ExportPage() {
               </div>
             </div>
 
+            {error && (
+              <div className="p-4 bg-red-900/20 border border-red-700 rounded-lg">
+                <p className="text-red-400 text-sm">
+                  Export failed. Please try again.
+                </p>
+              </div>
+            )}
+
             <Button
               size="lg"
               className="w-full gap-2 flex items-center justify-center"
               onClick={handleExport}
+              disabled={isLoading}
             >
-              <Download className="w-5 h-5" />
-              Export Data
+              {isLoading ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+              {isLoading ? 'Exporting...' : 'Export Data'}
             </Button>
           </div>
         </Card>

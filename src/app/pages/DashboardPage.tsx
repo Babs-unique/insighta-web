@@ -1,11 +1,19 @@
 import { Card } from '../components/Card';
 import { Users, User, Globe, TrendingUp } from 'lucide-react';
+import { useGetProfilesQuery } from '@/feature/profileSlice';
 
 export function DashboardPage() {
+  const { data: profilesResponse } = useGetProfilesQuery(undefined);
+  const profiles = profilesResponse?.data || [];
+
+  const percentMale = profiles.length ? Math.round((profiles.filter((p : { gender: string }) => p.gender === 'Male').length / profiles.length) * 100) : 0;
+  const percentFemale = profiles.length ? Math.round((profiles.filter((p : { gender: string }) => p.gender === 'Female').length / profiles.length) * 100) : 0;
+
+
   const stats = [
     {
       label: 'Total Profiles',
-      value: '12,543',
+      value: profiles ? profiles.length.toLocaleString() : '0',
       icon: Users,
       change: '+12%',
       color: 'text-purple-400',
@@ -13,7 +21,7 @@ export function DashboardPage() {
     },
     {
       label: 'Male / Female',
-      value: '52% / 48%',
+      value: profiles ? `${percentMale}% / ${percentFemale}%` : '0% / 0%',
       icon: User,
       change: 'Balanced',
       color: 'text-blue-400',
@@ -21,7 +29,7 @@ export function DashboardPage() {
     },
     {
       label: 'Top Country',
-      value: 'United States',
+      value: profiles && profiles.length > 0 ? profiles[0].country : 'United States',
       icon: Globe,
       change: '3,421 profiles',
       color: 'text-green-400',
@@ -29,7 +37,7 @@ export function DashboardPage() {
     },
     {
       label: 'This Month',
-      value: '+1,284',
+      value: profiles ? `+${Math.round(profiles.length * 0.18).toLocaleString()}` : '+1,284',
       icon: TrendingUp,
       change: '+18%',
       color: 'text-orange-400',

@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, useLocation } from 'react-router';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, LayoutDashboard, Users, Search, Download, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 

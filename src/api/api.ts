@@ -9,9 +9,10 @@ import {
 import { logout } from '../feature/apiSlice';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://insighta-api-production-8655.up.railway.app',
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://insighta-api.onrender.com',
     credentials: 'include',
     prepareHeaders: (headers) => {
+        headers.set('x-api-version', "1")
         return headers;
     }
 })

@@ -1,22 +1,38 @@
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { User, Mail, Shield, LogOut } from 'lucide-react';
+import { User, Mail, Shield, LogOut, Loader } from 'lucide-react';
+import { useGetCurrentUserQuery, useLogoutMutation } from '@/feature/authSlice';
 
 export function AccountPage() {
   const navigate = useNavigate();
+  const { data: currentUser, isLoading: isLoadingUser } = useGetCurrentUserQuery();
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
 
-  const user = {
-    username: 'sarah.johnson',
-    email: 'sarah.johnson@example.com',
-    role: 'Admin',
-    joinedAt: '2025-01-15',
-    lastLogin: '2026-04-29T09:15:00Z',
+  const handleLogout = async () => {
+    try {
+      await logout().unwrap();
+      navigate('/');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
-  const handleLogout = () => {
-    navigate('/');
-  };
+  if (isLoadingUser) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-400" />
+          <p className="text-gray-400">Loading account information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userData = currentUser?.data;
+  const initials = userData?.username
+    ? userData.username.split('.').map((n: string) => n[0].toUpperCase()).join('')
+    : '?';
 
   return (
     <div className="p-8">
@@ -30,11 +46,11 @@ export function AccountPage() {
           <Card>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-2xl">
-                {user.username.split('.').map(n => n[0].toUpperCase()).join('')}
+                {initials}
               </div>
               <div>
-                <h2 className="text-2xl mb-1">{user.username}</h2>
-                <p className="text-gray-400">{user.email}</p>
+                <h2 className="text-2xl mb-1">{userData?.username || 'User'}</h2>
+                <p className="text-gray-400">{userData?.email}</p>
               </div>
             </div>
 
@@ -43,7 +59,7 @@ export function AccountPage() {
                 <User className="w-5 h-5 text-purple-400 mt-1" />
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Username</p>
-                  <p className="text-lg">{user.username}</p>
+                  <p className="text-lg">{userData?.username || 'N/A'}</p>
                 </div>
               </div>
 
@@ -51,7 +67,7 @@ export function AccountPage() {
                 <Mail className="w-5 h-5 text-blue-400 mt-1" />
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Email Address</p>
-                  <p className="text-lg">{user.email}</p>
+                  <p className="text-lg">{userData?.email || 'N/A'}</p>
                 </div>
               </div>
 
@@ -60,7 +76,7 @@ export function AccountPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Role</p>
                   <span className="inline-block px-3 py-1 bg-green-500/10 text-green-400 rounded-lg text-sm">
-                    {user.role}
+                    {userData?.role || 'user'}
                   </span>
                 </div>
               </div>
@@ -70,11 +86,13 @@ export function AccountPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-1">Member Since</p>
                   <p className="text-lg">
-                    {new Date(user.joinedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {userData?.joinedAt
+                      ? new Date(userData.joinedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })
+                      : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -86,15 +104,11 @@ export function AccountPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between py-3 border-b border-gray-800">
                 <span className="text-gray-400">Last Login</span>
-                <span>{new Date(user.lastLogin).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b border-gray-800">
-                <span className="text-gray-400">Total Searches</span>
-                <span>1,247</span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-gray-400">Profiles Analyzed</span>
-                <span>12,543</span>
+                <span>
+                  {userData?.lastLogin
+                    ? new Date(userData.lastLogin).toLocaleString()
+                    : 'N/A'}
+                </span>
               </div>
             </div>
           </Card>
@@ -115,9 +129,14 @@ export function AccountPage() {
                 variant="ghost"
                 className="w-full text-red-400 hover:bg-red-500/10 gap-2 flex items-center justify-center"
                 onClick={handleLogout}
+                disabled={isLoggingOut}
               >
-                <LogOut className="w-4 h-4" />
-                Logout
+                {isLoggingOut ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <LogOut className="w-4 h-4" />
+                )}
+                {isLoggingOut ? 'Logging out...' : 'Logout'}
               </Button>
             </div>
           </Card>
