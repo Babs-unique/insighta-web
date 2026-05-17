@@ -9,6 +9,7 @@ interface RoleProtectedRouteProps {
 
 const RoleProtectedRoute = ({ children, requiredRole }: RoleProtectedRouteProps) => {
   const { data: user, isLoading, error } = useGetCurrentUserQuery();
+  const currentUser = user?.data ?? user;
 
   // Show loading state
   if (isLoading) {
@@ -20,12 +21,12 @@ const RoleProtectedRoute = ({ children, requiredRole }: RoleProtectedRouteProps)
   }
 
   // Not authenticated
-  if (!user || error) {
+  if (!currentUser || error) {
     return <Navigate to="/login" replace />;
   }
 
   // Authenticated but doesn't have required role
-  if (user.role !== requiredRole) {
+  if (currentUser.role !== requiredRole) {
     return <Navigate to="/app" replace />;
   }
 

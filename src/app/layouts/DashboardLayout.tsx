@@ -1,17 +1,22 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, LayoutDashboard, Users, Search, Download, User, LogOut } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Users, Search, Download, Shield, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { useGetCurrentUserQuery } from '@/feature/authSlice';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { data: user } = useGetCurrentUserQuery();
+  const currentUser = user?.data ?? user;
+  const isAdmin = currentUser?.role === 'admin';
 
   const menuItems = [
     { path: '/app', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/app/profiles', label: 'Profiles', icon: Users },
     { path: '/app/search', label: 'Search', icon: Search },
     { path: '/app/export', label: 'Export', icon: Download },
+    ...(isAdmin ? [{ path: '/app/manage', label: 'Manage', icon: Shield }] : []),
     { path: '/app/account', label: 'Account', icon: User },
   ];
 

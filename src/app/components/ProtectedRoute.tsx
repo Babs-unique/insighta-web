@@ -4,6 +4,7 @@ import { useGetCurrentUserQuery } from "@/feature/authSlice";
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { data: user, isLoading, error } = useGetCurrentUserQuery();
+  const currentUser = user?.data ?? user;
 
   if (isLoading) {
     return (
@@ -14,7 +15,7 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   }
 
   // If no user or there's an error, user is not authenticated
-  if (!user || error) {
+  if (!currentUser || error) {
     return <Navigate to="/login" replace />;
   }
 
